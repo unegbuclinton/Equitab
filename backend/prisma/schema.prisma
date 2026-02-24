@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  admin                 Admin?
+  contributions         Contribution[] @relation("UserContributions")
+  createdContributions  Contribution[] @relation("CreatedBy")
+  verifiedContributions Contribution[] @relation("VerifiedBy")
+  units                 Unit[]
+  auditLogs             AuditLog[]
+  closedMonths          Month[]
+
+  @@map("users")
+}
+
+model Admin {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  role      String   @default("admin")
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admins")
+}
+
+model Contribution {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  amount          Decimal   @db.Decimal(15, 2)
+  monthId         String    @map("month_id") @db.Uuid
+  reference       String?
+  status          String    @default("pending")
+  verifiedBy      String?   @map("verified_by") @db.Uuid
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  createdBy       String    @map("created_by") @db.Uuid
+  rejectionReason String?   @map("rejection_reason")
+
+  user     User   @relation("UserContributions", fields: [userId], references: [id])
+  month    Month  @relation(fields: [monthId], references: [id])
+  creator  User   @relation("CreatedBy", fields: [createdBy], references: [id])
+  verifier User?  @relation("VerifiedBy", fields: [verifiedBy], references: [id])
+  unit     Unit?
+
+  @@index([userId])
+  @@index([monthId])
+  @@index([status])
+  @@map("contributions")
+}
+
+model Unit {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  contributionId String   @unique @map("contribution_id") @db.Uuid
+  unitsEarned    Decimal  @map("units_earned") @db.Decimal(10, 4)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [userId], references: [id])
+  contribution Contribution @relation(fields: [contributionId], references: [id])
+
+  @@index([userId])
+  @@map("units")
+}
+
+model Month {
+  id                  String    @id @default(uuid()) @db.Uuid
+  year                Int
+  month               Int
+  isClosed            Boolean   @default(false) @map("is_closed")
+  closedAt            DateTime? @map("closed_at")
+  closedBy            String?   @map("closed_by") @db.Uuid
+  minimumContribution Decimal   @map("minimum_contribution") @db.Decimal(15, 2)
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  closer        User?          @relation(fields: [closedBy], references: [id])
+  contributions Contribution[]
+
+  @@unique([year, month])
+  @@map("months")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id") @db.Uuid
+  performedBy String   @map("performed_by") @db.Uuid
+  details     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  performer User @relation(fields: [performedBy], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([performedBy])
+  @@map("audit_log")
+}
+
+model GroupConfig {
+  id                        String   @id @default(uuid()) @db.Uuid
+  unitValue                 Decimal  @default(50000.00) @map("unit_value") @db.Decimal(15, 2)
+  currency                  String   @default("₦")
+  totalFunds                Decimal  @default(0) @map("total_funds") @db.Decimal(15, 2)
+  safeYieldAllocation       Decimal  @default(0) @map("safe_yield_allocation") @db.Decimal(15, 2)
+  opportunityPoolAllocation Decimal  @default(0) @map("opportunity_pool_allocation") @db.Decimal(15, 2)
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+  updatedBy                 String?  @map("updated_by") @db.Uuid
+
+  @@map("group_config")
+}
