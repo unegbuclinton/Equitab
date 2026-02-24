@@ -32,9 +32,6 @@ export class EquityService {
 
     // Get units per user with details (excluding admins from equity)
     const users = await prisma.user.findMany({
-      where: {
-        admin: null, // Only non-admin users get equity
-      },
       include: {
         units: true,
       },

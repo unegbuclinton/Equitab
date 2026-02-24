@@ -76,6 +76,16 @@ class ApiService {
     return this.request<any[]>(`/contributions?${params}`);
   }
 
+  // Fetch every contribution from every member (no userId filter)
+  async getAllContributions(filters?: { monthId?: string; status?: string }) {
+    const params = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(filters ?? {}).filter(([, v]) => v !== undefined && v !== '')
+      )
+    );
+    return this.request<any[]>(`/contributions?${params}`);
+  }
+
   async createContribution(data: {
     userId: string;
     amount: number;
