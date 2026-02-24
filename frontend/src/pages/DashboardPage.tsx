@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -19,6 +19,9 @@ export const DashboardPage: React.FC = () => {
   const [equity, setEquity] = useState<EquityData | null>(null);
   const [myEquity, setMyEquity] = useState<any>(null);
   const [recentContributions, setRecentContributions] = useState<any[]>([]);
+  const [allContributions, setAllContributions] = useState<any[]>([]);
+  const [months, setMonths] = useState<any[]>([]);
+  const [selectedMonthId, setSelectedMonthId] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [showContributionModal, setShowContributionModal] = useState(false);
 
@@ -28,21 +31,44 @@ export const DashboardPage: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [equityData, myEquityData, contributions] = await Promise.all([
-        apiService.getEquity(),
-        user ? apiService.getMemberEquity(user.id) : Promise.resolve(null),
-        apiService.getContributions({ userId: user?.id }),
-      ]);
+      const [equityData, myEquityData, contributions, allContribsData, monthsData] =
+        await Promise.all([
+          apiService.getEquity(),
+          user ? apiService.getMemberEquity(user.id) : Promise.resolve(null),
+          apiService.getContributions({ userId: user?.id }),
+          apiService.getAllContributions(),
+          apiService.getMonths(),
+        ]);
 
       setEquity(equityData);
       setMyEquity(myEquityData);
       setRecentContributions(contributions.slice(0, 5));
+      setAllContributions(allContribsData);
+      setMonths(monthsData);
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Filter all contributions by selected month, then sum verified amounts
+  const filteredContributions = useMemo(() => {
+    if (selectedMonthId === 'all') return allContributions;
+    return allContributions.filter(c => c.monthId === selectedMonthId);
+  }, [allContributions, selectedMonthId]);
+
+  const totalVerifiedSum = useMemo(() =>
+    filteredContributions
+      .filter(c => c.status === 'verified')
+      .reduce((sum, c) => sum + Number(c.amount), 0),
+    [filteredContributions]
+  );
+
+  const totalPendingCount = useMemo(() =>
+    filteredContributions.filter(c => c.status === 'pending').length,
+    [filteredContributions]
+  );
 
   if (isLoading) {
     return (
@@ -61,7 +87,7 @@ export const DashboardPage: React.FC = () => {
           </h1>
           <p className="text-lg text-slate-500">Here's your investment overview</p>
         </div>
-        <button 
+        <button
           className="btn-primary whitespace-nowrap"
           onClick={() => setShowContributionModal(true)}
         >
@@ -97,15 +123,33 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Total Contributions — real ₦ sum, filterable by month */}
         <div className="card group hover:border-primary/30">
-          <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">💰</div>
+          <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">💰</div>
           <div className="flex-1">
-            <div className="text-sm font-medium uppercase tracking-wider text-slate-500 mb-1">Your Contributions</div>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-sm font-medium uppercase tracking-wider text-slate-500">
+                Total Contributions
+              </div>
+              <select
+                id="total-contributions-month-filter"
+                className="text-[11px] border border-slate-200 rounded-md px-1.5 py-0.5 text-slate-500 bg-white focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer max-w-[90px]"
+                value={selectedMonthId}
+                onChange={e => setSelectedMonthId(e.target.value)}
+              >
+                <option value="all">All time</option>
+                {months.map((m: any) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name ?? `Month ${m.month}`} {m.year}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="text-3xl font-bold text-slate-800 mb-1">
-              {recentContributions.filter(c => c.status === 'verified').length}
+              ₦{totalVerifiedSum.toLocaleString()}
             </div>
             <div className="text-xs text-slate-400">
-              {recentContributions.filter(c => c.status === 'pending').length} pending
+              {totalPendingCount} pending
             </div>
           </div>
         </div>
@@ -205,7 +249,7 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 font-semibold text-slate-800">
                     {member.fullName}
-                    {member.userId === user?.id && 
+                    {member.userId === user?.id &&
                       <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">You</span>
                     }
                   </div>
@@ -224,7 +268,6 @@ export const DashboardPage: React.FC = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    
         {user?.isAdmin && (
           <>
             <Link to="/months" className="card group hover:border-primary/50 text-center block no-underline transition-all">
