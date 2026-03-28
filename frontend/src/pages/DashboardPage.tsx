@@ -31,18 +31,17 @@ export const DashboardPage: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [equityData, myEquityData, contributions, allContribsData, monthsData] =
+      const [equityData, myEquityData, allContribsData, monthsData] =
         await Promise.all([
           apiService.getEquity(),
           user ? apiService.getMemberEquity(user.id) : Promise.resolve(null),
-          apiService.getContributions({ userId: user?.id }),
           apiService.getAllContributions(),
           apiService.getMonths(),
         ]);
 
       setEquity(equityData);
       setMyEquity(myEquityData);
-      setRecentContributions(contributions.slice(0, 5));
+      setRecentContributions(allContribsData.slice(0, 10));
       setAllContributions(allContribsData);
       setMonths(monthsData);
     } catch (error) {
@@ -208,15 +207,28 @@ export const DashboardPage: React.FC = () => {
             <div className="flex flex-col gap-3">
               {recentContributions.map((contribution) => (
                 <div key={contribution.id} className="flex justify-between items-center p-4 bg-slate-50/50 rounded-lg hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                  <div>
-                    <div className="font-semibold text-slate-800 mb-1">
-                      ₦{Number(contribution.amount).toLocaleString()}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-slate-800">
+                        {contribution.user?.fullName || 'Unknown'}
+                      </span>
+                      {contribution.user?.id === user?.id && (
+                        <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">You</span>
+                      )}
                     </div>
-                    <div className="text-xs text-slate-400">
-                      {new Date(contribution.createdAt).toLocaleDateString()}
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <span className="font-mono font-medium text-slate-600">
+                        ₦{Number(contribution.amount).toLocaleString()}
+                      </span>
+                      <span>·</span>
+                      <span>
+                        {contribution.month
+                          ? `${contribution.month.name} ${contribution.month.year}`
+                          : new Date(contribution.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                  <span className={`badge ${
+                  <span className={`badge ml-3 shrink-0 ${
                     contribution.status === 'verified' ? 'bg-green-100 text-green-700' :
                     contribution.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                     'bg-red-100 text-red-700'
