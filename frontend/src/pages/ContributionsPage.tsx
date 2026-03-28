@@ -86,7 +86,7 @@ export const ContributionsPage: React.FC = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent inline-block mb-2">
             Contributions
           </h1>
-          <p className="text-slate-500">All member contributions — transparent and up to date</p>
+          <p className="text-slate-500">All member contributions </p>
         </div>
         <button className="btn-primary" onClick={() => setShowModal(true)}>
           + New Contribution
