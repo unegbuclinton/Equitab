@@ -31,6 +31,7 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
   const [amount, setAmount] = useState('');
   const [monthId, setMonthId] = useState('');
   const [reference, setReference] = useState('');
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -71,12 +72,14 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
         userId: user.id,
         amount: Number(amount),
         monthId,
-        reference
+        reference,
+        file: file || undefined
       });
 
       // Reset form
       setAmount('');
       setReference('');
+      setFile(null);
       
       onSuccess();
       onClose();
@@ -156,6 +159,24 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
                 onChange={(e) => setReference(e.target.value)}
                 placeholder="Bank transfer reference, etc."
                 className="input-field"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Receipt/File (Optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setFile(e.target.files[0]);
+                  } else {
+                    setFile(null);
+                  }
+                }}
+                className="input-field py-2"
               />
             </div>
           </div>
