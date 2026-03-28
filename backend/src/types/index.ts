@@ -8,6 +8,7 @@ export interface ApiResponse<T = any> {
 export interface AuthPayload {
   userId: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 export interface RequestWithAuth extends Express.Request {

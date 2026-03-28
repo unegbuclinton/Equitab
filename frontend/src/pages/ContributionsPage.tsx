@@ -9,6 +9,7 @@ interface Contribution {
   status: 'pending' | 'verified' | 'rejected';
   createdAt: string;
   reference?: string;
+  fileUrl?: string;
   user?: {
     id: string;
     fullName: string;
@@ -159,6 +160,7 @@ export const ContributionsPage: React.FC = () => {
                   <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Member</th>
                   <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
                   <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Month</th>
+                  <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Receipt</th>
                   <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
                 </tr>
@@ -185,6 +187,20 @@ export const ContributionsPage: React.FC = () => {
                       {contribution.month
                         ? `${contribution.month.name} ${contribution.month.year}`
                         : '-'}
+                    </td>
+                    <td className="p-4 text-sm">
+                      {contribution.fileUrl ? (
+                        <a 
+                          href={contribution.fileUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-primary hover:text-primary-dark underline inline-flex items-center gap-1"
+                        >
+                          <span>📄</span> View
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
                     </td>
                     <td className="p-4">
                       <span className={`badge ${

@@ -1,6 +1,9 @@
 import { Response } from 'express';
 import { RequestWithAuth } from '../middleware/auth';
 import { contributionService } from '../services/contribution.service';
+import { uploadToCloudinary } from '../utils/cloudinary';
+import { emailService } from '../services/email.service';
+import { prisma } from '../config/prisma';
 
 // Helper function to get month name from month number
 function getMonthName(monthNum: number): string {
@@ -42,13 +45,55 @@ export class ContributionController {
         });
       }
 
+      let fileUrl: string | undefined = undefined;
+
+      // Handle file upload if present
+      if (req.file) {
+        try {
+          fileUrl = await uploadToCloudinary(req.file.buffer);
+        } catch (error) {
+          console.error('File upload failed:', error);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to upload file',
+          });
+        }
+      }
+
       const contribution = await contributionService.createContribution({
         userId,
         amount: parseFloat(amount),
         monthId,
         reference,
+        fileUrl,
         createdBy: req.user.userId,
       });
+
+      // Send email to admins if created by non-admin
+      if (!req.user.isAdmin) {
+        try {
+          const admins = await prisma.user.findMany({
+            where: { admin: { isNot: null } },
+            select: { email: true }
+          });
+          
+          if (admins.length > 0) {
+            const adminEmails = admins.map(a => a.email);
+            const monthName = getMonthName(contribution.month.month);
+            
+            await emailService.sendContributionNotification(
+              adminEmails,
+              contribution.user.fullName,
+              contribution.amount.toNumber(),
+              monthName,
+              contribution.month.year
+            );
+          }
+        } catch (emailError) {
+          console.error('Failed to send notification email:', emailError);
+          // Don't fail the request if email fails
+        }
+      }
 
       res.status(201).json({
         success: true,

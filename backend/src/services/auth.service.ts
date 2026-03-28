@@ -43,7 +43,11 @@ export class AuthService {
     }
 
     // Generate token
-    const token = this.generateToken({ userId: user.id, email: user.email });
+    const token = this.generateToken({ 
+      userId: user.id, 
+      email: user.email,
+      isAdmin: data.isAdmin || false
+    });
 
     return {
       user: {
@@ -77,7 +81,11 @@ export class AuthService {
     }
 
     // Generate token
-    const token = this.generateToken({ userId: user.id, email: user.email });
+    const token = this.generateToken({ 
+      userId: user.id, 
+      email: user.email,
+      isAdmin: !!user.admin
+    });
 
     return {
       user: {

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { authController } from '../controllers/auth.controller';
 import { contributionController } from '../controllers/contribution.controller';
 import { verificationController } from '../controllers/verification.controller';
@@ -9,6 +10,13 @@ import { requireAdmin } from '../middleware/rbac';
 
 const router = Router();
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
+
 // Auth routes (public)
 router.post('/auth/register', (req, res) => authController.register(req, res));
 router.post('/auth/login', (req, res) => authController.login(req, res));
@@ -17,7 +25,7 @@ router.get('/auth/me', authenticate, (req, res) =>
 );
 
 // Contribution routes (authenticated)
-router.post('/contributions', authenticate, (req, res) =>
+router.post('/contributions', authenticate, upload.single('receipt'), (req, res) =>
   contributionController.create(req, res)
 );
 router.get('/contributions', authenticate, (req, res) =>

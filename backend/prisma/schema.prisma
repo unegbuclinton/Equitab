@@ -51,6 +51,7 @@ model Contribution {
   createdAt       DateTime  @default(now()) @map("created_at")
   createdBy       String    @map("created_by") @db.Uuid
   rejectionReason String?   @map("rejection_reason")
+  fileUrl         String?   @map("file_url")
 
   user     User   @relation("UserContributions", fields: [userId], references: [id])
   month    Month  @relation(fields: [monthId], references: [id])

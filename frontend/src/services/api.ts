@@ -91,10 +91,46 @@ class ApiService {
     amount: number;
     monthId: string;
     reference?: string;
+    file?: File;
   }) {
+    if (data.file) {
+      const formData = new FormData();
+      formData.append('userId', data.userId);
+      formData.append('amount', data.amount.toString());
+      formData.append('monthId', data.monthId);
+      if (data.reference) {
+        formData.append('reference', data.reference);
+      }
+      formData.append('receipt', data.file);
+
+      // Create a custom request avoiding the default application/json header
+      const headers = new Headers();
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers.append('Authorization', `Bearer ${token}`);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/contributions`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const result: ApiResponse<any> = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Request failed');
+      }
+      return result.data;
+    }
+
     return this.request<any>('/contributions', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        userId: data.userId,
+        amount: data.amount,
+        monthId: data.monthId,
+        reference: data.reference,
+      }),
     });
   }
 

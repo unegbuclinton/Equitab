@@ -7,6 +7,7 @@ export class ContributionService {
     amount: number;
     monthId: string;
     reference?: string;
+    fileUrl?: string;
     createdBy: string;
   }) {
     // Get month to check minimum contribution
@@ -34,6 +35,7 @@ export class ContributionService {
         amount: new Decimal(data.amount),
         monthId: data.monthId,
         reference: data.reference,
+        fileUrl: data.fileUrl,
         createdBy: data.createdBy,
         status: 'pending',
       },

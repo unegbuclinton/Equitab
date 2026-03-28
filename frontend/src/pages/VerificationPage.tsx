@@ -11,6 +11,7 @@ interface PendingContribution {
   };
   createdAt: string;
   reference?: string;
+  fileUrl?: string;
   month?: {
     name: string;
     year: number;
@@ -108,8 +109,21 @@ export const VerificationPage: React.FC = () => {
                     </div>
                   )}
                   {item.reference && (
-                    <div className="text-slate-500 text-sm">
+                    <div className="text-slate-500 text-sm mb-1">
                       <strong className="text-slate-700">Ref:</strong> {item.reference}
+                    </div>
+                  )}
+                  {item.fileUrl && (
+                    <div className="text-slate-500 text-sm">
+                      <strong className="text-slate-700">Receipt:</strong>{' '}
+                      <a 
+                        href={item.fileUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-primary hover:text-primary-dark underline inline-flex items-center gap-1"
+                      >
+                        <span>📄</span> View File
+                      </a>
                     </div>
                   )}
                 </div>
